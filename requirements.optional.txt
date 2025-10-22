@@ -1,0 +1,13 @@
+asgiref
+cryptography
+Flask
+flask-limiter
+gunicorn
+mwclient
+mwoauth
+pymysql
+python-dotenv
+requests
+tqdm
+uvicorn
+wikitextparser

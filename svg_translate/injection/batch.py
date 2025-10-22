@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Iterable
-
-from tqdm import tqdm
+from typing import Iterable, Sequence
 
 from .injector import inject
 
@@ -14,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def start_injects(
-    files: Iterable[Path | str],
+    files: Iterable[Path | str] | Sequence[Path | str],
     translations: dict,
     output_dir_translated: Path,
     overwrite: bool = False,
@@ -26,7 +24,16 @@ def start_injects(
 
     files_stats = {}
 
-    for _index, file in tqdm(enumerate(files, 1), total=len(files), desc="Inject files:"):
+    if isinstance(files, Sequence):
+        iterable = enumerate(files, 1)
+        expected_total = len(files)
+    else:
+        iterable = enumerate(files, 1)
+        expected_total = None
+
+    processed = 0
+
+    for processed, file in iterable:
         file = Path(str(file))
 
         tree, stats = inject(
@@ -61,9 +68,11 @@ def start_injects(
 
         files_stats[file.name] = stats
 
+    total = expected_total if expected_total is not None else processed
+
     logger.debug(
         "all files: %s Saved %s, skipped %s, nested_files: %s",
-        len(files),
+        total,
         saved_done,
         no_save,
         nested_files,

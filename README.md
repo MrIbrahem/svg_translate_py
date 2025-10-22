@@ -13,10 +13,25 @@ This tool extracts multilingual text pairs from SVG files and applies translatio
 
 ## Installation
 
-This tool requires Python 3.10+ and the following dependencies:
+This tool requires Python 3.10+. Install the lightweight core dependencies with:
 
 ```bash
 pip install -r requirements.txt
+```
+
+If you are consuming the published package, the same set of runtime
+dependencies is available via `pip install svg-translate`.
+
+### Optional server & CLI tooling
+
+The repository also contains ancillary scripts for running web services or
+batch translation jobs. Install their dependencies by requesting the `server`
+extra or by using the bundled optional requirements file:
+
+```bash
+pip install svg-translate[server]
+# or
+pip install -r requirements.optional.txt
 ```
 
 ## Usage

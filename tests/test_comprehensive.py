@@ -1,5 +1,5 @@
 """
-Comprehensive unit tests for SvgTranslate covering edge cases and additional functionality.
+Comprehensive unit tests for CopySvgTranslate covering edge cases and additional functionality.
 """
 
 import json
@@ -14,17 +14,17 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from SvgTranslate import extract, inject, normalize_text, generate_unique_id, start_injects
-from SvgTranslate.text_utils import extract_text_from_node
-from SvgTranslate.injection.injector import load_all_mappings
-from SvgTranslate.injection.preparation import (
+from CopySvgTranslate import extract, inject, normalize_text, generate_unique_id, start_injects
+from CopySvgTranslate.text_utils import extract_text_from_node
+from CopySvgTranslate.injection.injector import load_all_mappings
+from CopySvgTranslate.injection.preparation import (
     normalize_lang,
     get_text_content,
     clone_element,
     make_translation_ready,
     SvgStructureException,
 )
-from SvgTranslate.workflows import svg_extract_and_inject, svg_extract_and_injects
+from CopySvgTranslate.workflows import svg_extract_and_inject, svg_extract_and_injects
 
 
 class TestTextUtils(unittest.TestCase):

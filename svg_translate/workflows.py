@@ -31,7 +31,7 @@ def svg_extract_and_inject(
         return None
 
     if not data_output_file:
-        json_output_dir = Path(__file__).parent / "data"
+        json_output_dir = Path.cwd() / "data"
         json_output_dir.mkdir(parents=True, exist_ok=True)
         data_output_file = json_output_dir / f"{extract_path.name}.json"
 

@@ -7,5 +7,6 @@ from pathlib import Path
 
 # Ensure the project root (which contains the ``SvgTranslate`` package) is importable
 ROOT = Path(__file__).resolve().parents[1]
+print(ROOT)
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

@@ -8,8 +8,6 @@ from .svgpy import (
     normalize_text,
     generate_unique_id,
 )
-from .commons import get_wikitext, get_files
-
 from .injects_files import start_injects
 
 __all__ = [
@@ -18,8 +16,6 @@ __all__ = [
     "svg_extract_and_injects",
     "extract",
     "inject",
-    "get_wikitext",
-    "get_files",
     "normalize_text",
     "generate_unique_id",
 ]

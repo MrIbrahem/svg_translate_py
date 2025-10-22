@@ -13,11 +13,14 @@ This tool extracts multilingual text pairs from SVG files and applies translatio
 
 ## Installation
 
-This tool requires Python 3.10+ and the following dependencies:
+This tool requires Python 3.10+. Install the lightweight core dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+If you are consuming the published package, the same set of runtime
+dependencies is available via `pip install svg-translate`.
 
 ## Usage
 
@@ -37,18 +40,18 @@ if tree is not None:
     print("Injection completed!")
 ```
 
-The helper stores the extracted phrases under `svg_translate/svgpy/data/` and,
+The helper stores the extracted phrases under `svg_translate/data/` and,
 when `save_result=True`, writes the translated SVG to
-`svg_translate/svgpy/translated/`. If you also need statistics about how many
+`svg_translate/translated/`. If you also need statistics about how many
 translations were inserted, call the lower level injector with
 `return_stats=True`:
 
 ```python
-from svg_translate.svgpy.bots.inject_bot import inject
+from svg_translate.injection import inject
 
 tree, stats = inject(
     inject_file="examples/target_missing_translations.svg",
-    mapping_files=["svg_translate/svgpy/data/source_multilingual.svg.json"],
+    mapping_files=["svg_translate/data/source_multilingual.svg.json"],
     save_result=True,
     return_stats=True,
 )

@@ -6,11 +6,10 @@ This tool extracts multilingual text pairs from SVG files and applies translatio
 
 - Extract translations from SVG files with multilingual content
 - Inject translations into SVG files that lack them
-- Preserve original formatting and attributes
-- Create backups before modifying files
+- Preserve original formatting and attributes during injection
 - Support for dry-run mode to preview changes
-- Case-insensitive matching option
-- Comprehensive logging
+- Case-insensitive matching option for extraction
+- Comprehensive logging for both workflows
 
 ## Installation
 

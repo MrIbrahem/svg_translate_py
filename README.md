@@ -20,18 +20,17 @@ pip install -r requirements.txt
 ```
 
 If you are consuming the published package, the same set of runtime
-dependencies is available via 
+dependencies is available via
 ```bash
 pip install SvgTranslate
 ```
-
 ## Usage
 
 ### Extracting and injecting in a single step
 
 ```python
 from pathlib import Path
-from svg_translate import svg_extract_and_inject
+from SvgTranslate import svg_extract_and_inject
 
 tree = svg_extract_and_inject(
     extract_file=Path("examples/source_multilingual.svg"),
@@ -43,18 +42,18 @@ if tree is not None:
     print("Injection completed!")
 ```
 
-The helper stores the extracted phrases under `svg_translate/data/` and,
+The helper stores the extracted phrases under `SvgTranslate/data/` and,
 when `save_result=True`, writes the translated SVG to
-`svg_translate/translated/`. If you also need statistics about how many
+`SvgTranslate/translated/`. If you also need statistics about how many
 translations were inserted, call the lower level injector with
 `return_stats=True`:
 
 ```python
-from svg_translate.injection import inject
+from SvgTranslate.injection import inject
 
 tree, stats = inject(
     inject_file="examples/target_missing_translations.svg",
-    mapping_files=["svg_translate/data/source_multilingual.svg.json"],
+    mapping_files=["SvgTranslate/data/source_multilingual.svg.json"],
     save_result=True,
     return_stats=True,
 )
@@ -71,7 +70,7 @@ files are written.
 
 ```python
 from pathlib import Path
-from svg_translate import svg_extract_and_injects
+from SvgTranslate import svg_extract_and_injects
 
 translations = {
     "new": {

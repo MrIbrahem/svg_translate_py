@@ -15,22 +15,25 @@ def extract(svg_file_path, case_insensitive: bool = True):
     svg_file_path = Path(svg_file_path)
 
     if not svg_file_path.exists():
-        logger.error("SVG file not found: %s", svg_file_path)
+        logger.error(f"SVG file not found: {svg_file_path}")
         return None
 
-    logger.debug("Extracting translations from %s", svg_file_path)
+    logger.debug(f"Extracting translations from {svg_file_path}")
 
+    # Parse SVG as XML
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.parse(str(svg_file_path), parser)
     root = tree.getroot()
 
+    # Find all switch elements
     switches = root.xpath('//svg:switch', namespaces={'svg': 'http://www.w3.org/2000/svg'})
-    logger.debug("Found %s switch elements", len(switches))
+    logger.debug(f"Found {len(switches)} switch elements")
 
     translations = {"new": {"default_tspans_by_id": {}}, "old_way": {}}
     processed_switches = 0
 
     for switch in switches:
+        # Find all text elements within this switch
         text_elements = switch.xpath('./svg:text', namespaces={'svg': 'http://www.w3.org/2000/svg'})
 
         if not text_elements:
@@ -66,6 +69,7 @@ def extract(svg_file_path, case_insensitive: bool = True):
             tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
             if tspans:
                 tspans_to_id = {tspan.text.strip(): tspan.get('id') for tspan in tspans if tspan.text}
+                # Return a list of text from each tspan element
                 text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
             else:
                 tspans_to_id = {}
@@ -80,7 +84,7 @@ def extract(svg_file_path, case_insensitive: bool = True):
                     translations["new"]["default_tspans_by_id"].get(base_id)
                     or translations["new"]["default_tspans_by_id"].get(base_id.lower())
                 )
-                logger.debug("Mapping %s to %s", base_id, english_text)
+                logger.debug(f"{base_id=}, {english_text=}")
                 if not english_text:
                     continue
 
@@ -88,25 +92,29 @@ def extract(svg_file_path, case_insensitive: bool = True):
                 if store_key in translations["new"]:
                     translations["new"][store_key][system_lang] = normalized_translation
 
+        # If we found both default text and translations, add to our data
         if default_texts and switch_translations:
+            # Create a key from the first default text (we could use all texts but this is simpler)
             default_key = default_texts[0]
             translations["old_way"].setdefault(
                 default_key,
                 {"_texts": default_texts, "_translations": {}},
             )
 
+            # Store translations for each language and each text
             for lang, translated_texts in switch_translations.items():
                 translations["old_way"][default_key]['_translations'][lang] = translated_texts
 
             processed_switches += 1
-            logger.debug("Processed switch with default texts: %s", default_texts)
+            logger.debug(f"Processed switch with default texts: {default_texts}")
 
-    logger.debug("Extracted translations for %s switches", processed_switches)
+    logger.debug(f"Extracted translations for {processed_switches} switches")
 
+    # Count languages
     all_languages = set()
     for text_dict in translations["old_way"].values():
         all_languages.update(text_dict.get("_translations", {}).keys())
-    logger.debug("Found translations in %s languages: %s", len(all_languages), ", ".join(sorted(all_languages)))
+    logger.debug(f"Found translations in {len(all_languages)} languages: {', '.join(sorted(all_languages))}")
 
     translations["title"] = {}
     for key, mapping in list(translations["new"].items()):

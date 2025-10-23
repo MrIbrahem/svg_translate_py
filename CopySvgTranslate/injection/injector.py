@@ -45,7 +45,7 @@ def load_all_mappings(mapping_files: Iterable[Path | str]) -> dict:
             with open(mapping_path, 'r', encoding='utf-8') as f:
                 mappings = json.load(f)
         except Exception as exc:
-            logger.error("Error loading mapping file %s: %s", mapping_path, exc)
+            logger.error(f"Error loading mapping file {mapping_path}: {exc}")
             continue
 
         for key, value in mappings.items():

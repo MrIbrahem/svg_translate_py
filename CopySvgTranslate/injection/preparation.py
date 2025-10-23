@@ -6,7 +6,7 @@ import copy
 import logging
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 from lxml import etree
 
@@ -131,9 +131,46 @@ def make_translation_ready(svg_file_path: Path, write_back: bool = False) -> Tup
     if len(trefs) != 0:
         raise SvgStructureException('structure-error-contains-tref', trefs[0])
 
+    # Track all IDs in the document and normalise whitespace around them early
+    existing_ids: Set[str] = set()
+    for element in root.xpath('//*[@id]'):
+        element_id = element.get("id")
+        if not element_id:
+            continue
+        trimmed = element_id.strip()
+        if trimmed != element_id:
+            element.set("id", trimmed)
+        existing_ids.add(trimmed)
+
     # Collect translatable nodes and prepare idsInUse
     ids_in_use: List[int] = [0]
     translatable_nodes: List[etree._Element] = []
+
+    def allocate_trsvg_id() -> str:
+        """Allocate a new unique ``trsvg`` identifier."""
+        next_id = max(ids_in_use) if ids_in_use else 0
+        while True:
+            next_id += 1
+            candidate = f"trsvg{next_id}"
+            if candidate not in existing_ids:
+                ids_in_use.append(next_id)
+                existing_ids.add(candidate)
+                return candidate
+
+    def allocate_clone_id(base_id: str | None, lang: str) -> str:
+        """Allocate a unique identifier for a cloned ``<text>`` node."""
+        if base_id and re.match(r'^trsvg[0-9]+$', base_id):
+            return allocate_trsvg_id()
+        if base_id:
+            base_candidate = f"{base_id}-{lang}"
+            candidate = base_candidate
+            suffix = 1
+            while candidate in existing_ids:
+                suffix += 1
+                candidate = f"{base_candidate}-{suffix}"
+            existing_ids.add(candidate)
+            return candidate
+        return allocate_trsvg_id()
 
     # Process tspans
     tspans = root.findall(".//{%s}tspan" % SVG_NS)
@@ -176,17 +213,31 @@ def make_translation_ready(svg_file_path: Path, write_back: bool = False) -> Tup
     for node in list(translatable_nodes):
         node_id = node.get("id")
         if node_id is not None:
+            original_id = node_id
             node_id = node_id.strip()
-            node.set("id", node_id)
-            if "|" in node_id or "/" in node_id:
-                raise SvgStructureException('structure-error-invalid-node-id', node)
-            m = re.match(r'^trsvg([0-9]+)$', node_id)
-            if m:
-                ids_in_use.append(int(m.group(1)))
-            if node_id.isdigit():
+            if node_id != original_id:
+                existing_ids.discard(original_id)
+            if not node_id:
                 node.attrib.pop("id", None)
+                node_id = None
+            else:
+                node.set("id", node_id)
+                if "|" in node_id or "/" in node_id:
+                    raise SvgStructureException('structure-error-invalid-node-id', node)
+                m = re.match(r'^trsvg([0-9]+)$', node_id)
+                if m:
+                    ids_in_use.append(int(m.group(1)))
+                if node_id.isdigit():
+                    node.attrib.pop("id", None)
+                    existing_ids.discard(node_id)
+                    node_id = None
+                else:
+                    existing_ids.add(node_id)
         # remove empty nodes with no children and no text
         if (not list(node)) and (not (node.text and node.text.strip())):
+            node_id = node.get("id")
+            if node_id:
+                existing_ids.discard(node_id)
             parent = node.getparent()
             if parent is not None:
                 parent.remove(node)
@@ -204,9 +255,8 @@ def make_translation_ready(svg_file_path: Path, write_back: bool = False) -> Tup
     # Assign new ids where missing
     for node in translatable_nodes:
         if node.get("id") is None:
-            new_id = max(ids_in_use) + 1
-            node.set("id", f"trsvg{new_id}")
-            ids_in_use.append(new_id)
+            new_id = allocate_trsvg_id()
+            node.set("id", new_id)
 
     # Second pass on text elements for extra checks and switch creation
     texts = root.findall(".//{%s}text" % SVG_NS)
@@ -246,7 +296,7 @@ def make_translation_ready(svg_file_path: Path, write_back: bool = False) -> Tup
     switches = root.findall(".//{%s}switch" % SVG_NS)
     for sw in switches:
         # gather existing languages for duplicate detection
-        existing_langs = []
+        existing_langs: Set[str] = set()
         # collect children first to avoid modifying while iterating
         children = list(sw)
         for child in children:
@@ -258,29 +308,47 @@ def make_translation_ready(svg_file_path: Path, write_back: bool = False) -> Tup
             if child.tag not in ({f"{{{SVG_NS}}}text", "text"}):
                 raise SvgStructureException('structure-error-switch-child-not-text', child)
 
-            text_lang = child.get("systemLanguage") or "fallback"
-            if text_lang in existing_langs:
-                raise SvgStructureException('structure-error-multiple-text-same-lang', sw, [text_lang])
-            existing_langs.append(text_lang)
+            language_attr = child.get("systemLanguage")
+            real_langs = re.split(r',\s*', language_attr) if language_attr else ["fallback"]
 
-            language_attr = child.get("systemLanguage") or "fallback"
-            real_langs = re.split(r',\s*', language_attr)
-            languages_present = []
+            languages_present: Set[str] = set()
             for real in real_langs:
                 if real in languages_present:
                     raise SvgStructureException('structure-error-multiple-lang-in-text', child, [real])
-                languages_present.append(real)
+                languages_present.add(real)
+                if real in existing_langs:
+                    raise SvgStructureException('structure-error-multiple-text-same-lang', sw, [real])
 
             if len(real_langs) == 1:
+                lang_value = real_langs[0]
+                if lang_value == "fallback":
+                    if language_attr:
+                        child.attrib.pop("systemLanguage", None)
+                else:
+                    child.set("systemLanguage", lang_value)
+                existing_langs.add(lang_value)
                 continue
 
-            # For multiple languages in one node, clone for each language and append
-            for real in real_langs:
+            original_lang = real_langs[0]
+            if original_lang == "fallback":
+                child.attrib.pop("systemLanguage", None)
+            else:
+                child.set("systemLanguage", original_lang)
+            existing_langs.add(original_lang)
+
+            base_id = child.get("id")
+            for real in real_langs[1:]:
+                if real in existing_langs:
+                    raise SvgStructureException('structure-error-multiple-text-same-lang', sw, [real])
                 cloned = clone_element(child)
-                cloned.set("systemLanguage", real)
+                if real == "fallback":
+                    cloned.attrib.pop("systemLanguage", None)
+                else:
+                    cloned.set("systemLanguage", real)
+                new_id = allocate_clone_id(base_id, real)
+                cloned.set("id", new_id)
+                existing_langs.add(real)
                 sw.append(cloned)
-            # remove the original multi-language node
-            sw.remove(child)
 
     # Final reorder
     reorder_texts(root)

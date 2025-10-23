@@ -27,17 +27,20 @@ def svg_extract_and_inject(
 
     translations = extract(extract_path, case_insensitive=True)
     if not translations:
-        logger.error("Failed to extract translations from %s", extract_path)
+        logger.error(f"Failed to extract translations from {extract_path}")
         return None
 
     if not data_output_file:
         json_output_dir = Path.cwd() / "data"
         json_output_dir.mkdir(parents=True, exist_ok=True)
+
         data_output_file = json_output_dir / f"{extract_path.name}.json"
 
+    # Save translations to JSON
     with open(data_output_file, 'w', encoding='utf-8') as handle:
         json.dump(translations, handle, indent=2, ensure_ascii=False)
-    logger.debug("Saved translations to %s", data_output_file)
+
+    logger.debug(f"Saved translations to {data_output_file}")
 
     if not output_file:
         output_dir = Path.cwd() / "translated"
@@ -54,7 +57,7 @@ def svg_extract_and_inject(
     )
 
     if tree is None:
-        logger.error("Failed to inject translations into %s", inject_path)
+        logger.error(f"Failed to inject translations into {inject_path}")
     else:
         logger.debug("Injection stats: %s", stats)
 

@@ -149,14 +149,7 @@ class TestWorkflowFunctions(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        for file in self.test_dir.rglob('*'):
-            if file.is_file():
-                file.unlink()
-        for d in sorted(self.test_dir.rglob('*'), reverse=True):
-            if d.is_dir():
-                d.rmdir()
-        if self.test_dir.exists():
-            self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def test_svg_extract_and_injects_basic_workflow(self):
         """Test basic svg_extract_and_injects workflow."""
@@ -176,9 +169,7 @@ class TestExtractorEdgeCases(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        for file in self.test_dir.glob('*'):
-            file.unlink()
-        self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def test_extract_multiple_languages(self):
         """Test extracting with multiple language translations."""
@@ -207,9 +198,7 @@ class TestInjectionEdgeCases(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        for file in self.test_dir.glob('*'):
-            file.unlink()
-        self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def test_inject_with_output_directory(self):
         """Test inject saves to specified output directory."""

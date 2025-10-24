@@ -81,17 +81,12 @@ print(stats)
 ## Data Model
 
 The extractor writes a JSON document rooted under the `"new"` key. Each entry
-maps normalized English text to a dictionary of language codes and
-translations. Metadata such as `"default_tspans_by_id"` is used internally to
-reconstruct the SVG structure during injection. An example of the modern
-format:
+maps normalized English text to a dictionary of language codes and translations.
+An example of the modern format:
 
 ```json
 {
   "new": {
-    "default_tspans_by_id": {
-      "text2213": "but are connected in anti-phase"
-    },
     "but are connected in anti-phase": {
       "ar": "لكنها موصولة بمرحلتين متعاكستين."
     }
@@ -128,9 +123,6 @@ above.
 ```json
 {
   "new": {
-    "default_tspans_by_id": {
-      "text2213": "but are connected in anti-phase"
-    },
     "but are connected in anti-phase": {
       "ar": "لكنها موصولة بمرحلتين متعاكستين."
     }

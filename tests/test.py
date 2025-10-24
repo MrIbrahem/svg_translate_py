@@ -389,7 +389,7 @@ def test_svg_extract_and_injects_with_empty_translations(tmp_path: Path, target_
 def test_extract_with_case_insensitive_true() -> None:
     """
     Normalize translation keys to lowercase when extract is run with case-insensitive mode.
-    
+
     Verifies that calling extract on the sample SVG with case_insensitive enabled produces a result whose "new" translation keys (string keys) are all lowercase.
     """
     result = extract(FIXTURES_DIR / "source.svg", case_insensitive=True)

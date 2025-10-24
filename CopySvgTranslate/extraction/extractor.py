@@ -10,18 +10,59 @@ from ..text_utils import normalize_text
 logger = logging.getLogger(__name__)
 
 
+def get_english_default_texts(text_elements, case_insensitive):
+    new_keys = []
+    default_tspans_by_id = {}
+
+    for text_elem in text_elements:
+        system_lang = text_elem.get('systemLanguage')
+        if system_lang:
+            continue
+
+        tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
+        if tspans:
+            tspans_by_id = {
+                tspan.get('id'): tspan.text.strip()
+                for tspan in tspans
+                if tspan.text and tspan.get('id') and tspan.text.strip()
+            }
+            default_tspans_by_id.update(tspans_by_id)
+            text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
+        else:
+            text_contents = [text_elem.text.strip()] if text_elem.text else [""]
+
+        default_texts = [normalize_text(text, case_insensitive) for text in text_contents]
+        for text in default_texts:
+            key = text.lower() if case_insensitive else text
+            new_keys.append(key)
+
+    return new_keys, default_tspans_by_id
+
+
+def make_title_translations(new):
+    translations_title = {}
+
+    for key, mapping in list(new.items()):
+        if key and key[-4:].isdigit():
+            year = key[-4:]
+            if key != year and all(value[-4:].isdigit() and value[-4:] == year for value in mapping.values()):
+                translations_title[key[:-4]] = {lang: text[:-4] for lang, text in mapping.items()}
+
+    return translations_title
+
+
 def extract(svg_file_path, case_insensitive: bool = True):
     """
     Extract translation strings from an SVG file into a structured dictionary.
-    
+
     Parses the SVG, collects default (source) text and corresponding translations found in sibling text elements with a `systemLanguage` attribute, and returns a mapping suitable for localization workflows. Title-like entries that end with a four-digit year are separated into a `title` section with the year removed.
-    
+
     Parameters:
-    	svg_file_path (str | Path): Path to the SVG file to process.
-    	case_insensitive (bool): If true, treat default text keys case-insensitively by lowercasing them.
-    
+        svg_file_path (str | Path): Path to the SVG file to process.
+        case_insensitive (bool): If true, treat default text keys case-insensitively by lowercasing them.
+
     Returns:
-    	dict | None: A dictionary containing extracted translations (may include a "new" mapping of source text to per-language translations and a "title" mapping), or `None` if the file does not exist or could not be parsed.
+        dict | None: A dictionary containing extracted translations (may include a "new" mapping of source text to per-language translations and a "title" mapping), or `None` if the file does not exist or could not be parsed.
     """
     svg_file_path = Path(svg_file_path)
 
@@ -44,9 +85,7 @@ def extract(svg_file_path, case_insensitive: bool = True):
     switches = root.xpath('//svg:switch', namespaces={'svg': 'http://www.w3.org/2000/svg'})
     logger.debug(f"Found {len(switches)} switch elements")
 
-    default_tspans_by_id = {}
     translations = {"new": {}}
-    processed_switches = 0
 
     for switch in switches:
         # Find all text elements within this switch
@@ -55,27 +94,12 @@ def extract(svg_file_path, case_insensitive: bool = True):
         if not text_elements:
             continue
 
+        new_keys, default_tspans_by_id = get_english_default_texts(text_elements, case_insensitive)
+
+        logger.debug("default_tspans_by_id:", default_tspans_by_id)
+
+        translations["new"].update({x: {} for x in new_keys if x not in translations["new"]})
         switch_translations = {}
-        tspans_by_id = {}
-        default_texts = []
-
-        for text_elem in text_elements:
-            system_lang = text_elem.get('systemLanguage')
-            if system_lang:
-                continue
-
-            tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
-            if tspans:
-                tspans_by_id = {tspan.get('id'): tspan.text.strip() for tspan in tspans if tspan.text}
-                default_tspans_by_id.update(tspans_by_id)
-                text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
-            else:
-                text_contents = [text_elem.text.strip()] if text_elem.text else [""]
-
-            default_texts = [normalize_text(text, case_insensitive) for text in text_contents]
-            for text in default_texts:
-                key = text.lower() if case_insensitive else text
-                translations["new"].setdefault(key, {})
 
         for text_elem in text_elements:
             system_lang = text_elem.get('systemLanguage')
@@ -85,7 +109,6 @@ def extract(svg_file_path, case_insensitive: bool = True):
             tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
             if tspans:
                 tspans_to_id = {tspan.text.strip(): tspan.get('id') for tspan in tspans if tspan.text and tspan.text.strip() and tspan.get('id')}
-                # Return a list of text from each tspan element
                 text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
             else:
                 tspans_to_id = {}
@@ -98,12 +121,13 @@ def extract(svg_file_path, case_insensitive: bool = True):
                 base_id = tspans_to_id.get(text.strip(), "")
                 if not base_id:
                     continue
-                    
+
                 base_id = base_id.split("-")[0].strip()
-                english_text = default_tspans_by_id.get(base_id) or default_tspans_by_id.get(
-                    base_id.lower()
-                )
+
+                english_text = default_tspans_by_id.get(base_id) or default_tspans_by_id.get(base_id.lower())
+
                 logger.debug(f"{base_id=}, {english_text=}")
+
                 if not english_text:
                     continue
 
@@ -111,21 +135,6 @@ def extract(svg_file_path, case_insensitive: bool = True):
                 if store_key in translations["new"]:
                     translations["new"][store_key][system_lang] = normalized_translation
 
-        # If we found both default text and translations, add to our data
-        if default_texts and switch_translations:
-            processed_switches += 1
-            logger.debug(f"Processed switch with default texts: {default_texts}")
-
-    logger.debug(f"Extracted translations for {processed_switches} switches")
-
-    translations["title"] = {}
-    for key, mapping in list(translations["new"].items()):
-        if key and key[-4:].isdigit():
-            year = key[-4:]
-            if key != year and all(value[-4:].isdigit() and value[-4:] == year for value in mapping.values()):
-                translations["title"][key[:-4]] = {lang: text[:-4] for lang, text in mapping.items()}
-
-    if not translations["new"]:
-        translations.pop("new")
+    translations["title"] = make_title_translations(translations["new"])
 
     return translations

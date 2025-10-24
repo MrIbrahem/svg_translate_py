@@ -16,6 +16,7 @@ from CopySvgTranslate.text_utils import extract_text_from_node
 from CopySvgTranslate.injection.injector import load_all_mappings
 from CopySvgTranslate.injection.preparation import normalize_lang, get_text_content, clone_element, SvgStructureException
 from CopySvgTranslate.workflows import svg_extract_and_injects
+from tests._cleanup import cleanup_directory
 
 
 class TestTextUtilsComprehensive(unittest.TestCase):
@@ -101,9 +102,7 @@ class TestInjectorFunctions(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        for file in self.test_dir.glob('*'):
-            file.unlink()
-        self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def test_load_all_mappings_single_json(self):
         """Test loading single mapping file."""

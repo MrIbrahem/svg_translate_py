@@ -5,6 +5,7 @@ Unit tests for the SVG translation tool.
 import json
 import sys
 import tempfile
+import shutil
 import unittest
 from pathlib import Path
 
@@ -15,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from CopySvgTranslate import extract, inject, normalize_text, generate_unique_id
-from tests._cleanup import cleanup_directory
+
 
 class TestSVGTranslate(unittest.TestCase):
     """Test cases for the SVG translation tool."""
@@ -23,7 +24,7 @@ class TestSVGTranslate(unittest.TestCase):
     def setUp(self):
         """
         Prepare temporary directory and SVG test fixtures used by the test cases.
-        
+
         Sets up the following instance attributes for use by tests:
             test_dir: Path to a temporary directory for fixture files.
             arabic_svg_content: SVG string containing English and Arabic switches (two entries).
@@ -104,7 +105,7 @@ class TestSVGTranslate(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         # Clean up temporary files
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def assertTreeHasTranslations(self, tree, expected_texts=None):
         """Verify that the injected tree contains the expected Arabic texts."""

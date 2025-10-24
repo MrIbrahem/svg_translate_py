@@ -7,6 +7,7 @@ import json
 import sys
 import tempfile
 import unittest
+import shutil
 from pathlib import Path
 
 from lxml import etree
@@ -31,7 +32,6 @@ from CopySvgTranslate.injection.preparation import (
     make_translation_ready,
     SvgStructureException,
 )
-from tests._cleanup import cleanup_directory
 
 
 class TestGetTargetPath(unittest.TestCase):
@@ -45,13 +45,13 @@ class TestGetTargetPath(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_get_target_path_with_output_file(self):
         """Test get_target_path when output_file is specified."""
         output_file = self.test_dir / "output" / "result.svg"
         result = get_target_path(output_file, None, self.svg_path)
-        
+
         self.assertEqual(result, output_file)
         self.assertTrue(result.parent.exists())
 
@@ -59,21 +59,21 @@ class TestGetTargetPath(unittest.TestCase):
         """Test get_target_path when output_dir is specified."""
         output_dir = self.test_dir / "translated"
         result = get_target_path(None, output_dir, self.svg_path)
-        
+
         self.assertEqual(result, output_dir / "source.svg")
         self.assertTrue(result.parent.exists())
 
     def test_get_target_path_default_to_source_dir(self):
         """Test get_target_path defaults to source file's directory."""
         result = get_target_path(None, None, self.svg_path)
-        
+
         self.assertEqual(result, self.svg_path.parent / "source.svg")
 
     def test_get_target_path_creates_nested_directories(self):
         """Test get_target_path creates nested output directories."""
         output_file = self.test_dir / "a" / "b" / "c" / "result.svg"
         result = get_target_path(output_file, None, self.svg_path)
-        
+
         self.assertTrue(result.parent.exists())
         self.assertEqual(result, output_file)
 
@@ -81,7 +81,7 @@ class TestGetTargetPath(unittest.TestCase):
         """Test get_target_path handles string paths."""
         output_dir = str(self.test_dir / "output")
         result = get_target_path(None, output_dir, self.svg_path)
-        
+
         self.assertTrue(isinstance(result, Path))
         self.assertTrue(result.parent.exists())
 
@@ -97,7 +97,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         </text>'''
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, ["First", "Second"])
 
     def test_extract_from_text_without_tspans(self):
@@ -105,7 +105,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         xml = '<text xmlns="http://www.w3.org/2000/svg">Direct text</text>'
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, ["Direct text"])
 
     def test_extract_from_text_with_empty_tspans(self):
@@ -116,7 +116,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         </text>'''
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, ["", "Content"])
 
     def test_extract_from_text_with_whitespace_tspans(self):
@@ -127,7 +127,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         </text>'''
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, ["Spaces", "Tabs"])
 
     def test_extract_from_empty_text_node(self):
@@ -135,7 +135,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         xml = '<text xmlns="http://www.w3.org/2000/svg"></text>'
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, [""])
 
     def test_extract_with_unicode_content(self):
@@ -147,7 +147,7 @@ class TestExtractTextFromNode(unittest.TestCase):
         </text>'''
         node = etree.fromstring(xml)
         result = extract_text_from_node(node)
-        
+
         self.assertEqual(result, ["مرحبا", "你好", "Привет"])
 
 
@@ -160,7 +160,7 @@ class TestWorkOnSwitches(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_work_on_switches_basic(self):
         """Test basic switch processing."""
@@ -172,9 +172,9 @@ class TestWorkOnSwitches(unittest.TestCase):
         root = etree.fromstring(svg_content)
         existing_ids = {"text1"}
         mappings = {"new": {"hello": {"ar": "مرحبا", "fr": "Bonjour"}}}
-        
+
         stats = work_on_switches(root, existing_ids, mappings, case_insensitive=True)
-        
+
         self.assertEqual(stats['processed_switches'], 1)
         self.assertEqual(stats['inserted_translations'], 2)
         self.assertEqual(stats['new_languages'], 2)
@@ -190,9 +190,9 @@ class TestWorkOnSwitches(unittest.TestCase):
         root = etree.fromstring(svg_content)
         existing_ids = {"text1", "text1-ar"}
         mappings = {"new": {"hello": {"ar": "مرحبا جديد", "fr": "Bonjour"}}}
-        
+
         stats = work_on_switches(root, existing_ids, mappings, overwrite=False)
-        
+
         self.assertEqual(stats['skipped_translations'], 1)
         self.assertEqual(stats['inserted_translations'], 1)
 
@@ -207,9 +207,9 @@ class TestWorkOnSwitches(unittest.TestCase):
         root = etree.fromstring(svg_content)
         existing_ids = {"text1", "text1-ar"}
         mappings = {"new": {"hello": {"ar": "New"}}}
-        
+
         stats = work_on_switches(root, existing_ids, mappings, overwrite=True)
-        
+
         self.assertEqual(stats['updated_translations'], 1)
 
     def test_work_on_switches_case_sensitive(self):
@@ -222,9 +222,9 @@ class TestWorkOnSwitches(unittest.TestCase):
         root = etree.fromstring(svg_content)
         existing_ids = {"text1"}
         mappings = {"new": {"Hello": {"ar": "مرحبا"}}}
-        
+
         stats = work_on_switches(root, existing_ids, mappings, case_insensitive=False)
-        
+
         self.assertEqual(stats['inserted_translations'], 1)
 
     def test_work_on_switches_with_year_suffix(self):
@@ -240,9 +240,9 @@ class TestWorkOnSwitches(unittest.TestCase):
             "title": {"Population ": {"ar": "السكان ", "fr": "Population "}},
             "new": {}
         }
-        
+
         stats = work_on_switches(root, existing_ids, mappings, case_insensitive=True)
-        
+
         # Year suffix logic should be applied
         self.assertGreaterEqual(stats['processed_switches'], 0)
 
@@ -261,9 +261,9 @@ class TestSortSwitchTexts(unittest.TestCase):
         </svg>'''
         root = etree.fromstring(svg_content)
         switch = root.find('.//{http://www.w3.org/2000/svg}switch')
-        
+
         sort_switch_texts(switch)
-        
+
         texts = switch.findall('.//{http://www.w3.org/2000/svg}text')
         # Default (no systemLanguage) should be last
         self.assertIsNone(texts[-1].get('systemLanguage'))
@@ -273,7 +273,7 @@ class TestSortSwitchTexts(unittest.TestCase):
         svg_content = '<svg xmlns="http://www.w3.org/2000/svg"><switch></switch></svg>'
         root = etree.fromstring(svg_content)
         switch = root.find('.//{http://www.w3.org/2000/svg}switch')
-        
+
         # Should not raise an error
         sort_switch_texts(switch)
 
@@ -286,9 +286,9 @@ class TestSortSwitchTexts(unittest.TestCase):
         </svg>'''
         root = etree.fromstring(svg_content)
         switch = root.find('.//{http://www.w3.org/2000/svg}switch')
-        
+
         sort_switch_texts(switch)
-        
+
         texts = switch.findall('.//{http://www.w3.org/2000/svg}text')
         self.assertEqual(len(texts), 1)
 
@@ -306,12 +306,12 @@ class TestReorderTexts(unittest.TestCase):
             </switch>
         </svg>'''
         root = etree.fromstring(svg_content)
-        
+
         reorder_texts(root)
-        
+
         switch = root.find('.//{http://www.w3.org/2000/svg}switch')
         texts = switch.findall('{http://www.w3.org/2000/svg}text')
-        
+
         # Fallback should be last
         self.assertIsNone(texts[-1].get('systemLanguage'))
 
@@ -328,9 +328,9 @@ class TestReorderTexts(unittest.TestCase):
             </switch>
         </svg>'''
         root = etree.fromstring(svg_content)
-        
+
         reorder_texts(root)
-        
+
         switches = root.findall('.//{http://www.w3.org/2000/svg}switch')
         for switch in switches:
             texts = switch.findall('{http://www.w3.org/2000/svg}text')
@@ -342,7 +342,7 @@ class TestReorderTexts(unittest.TestCase):
         """Test reordering with no switch elements."""
         svg_content = '<svg xmlns="http://www.w3.org/2000/svg"><text>No switch</text></svg>'
         root = etree.fromstring(svg_content)
-        
+
         # Should not raise an error
         reorder_texts(root)
 
@@ -390,7 +390,7 @@ class TestGetTextContent(unittest.TestCase):
         xml = '<text xmlns="http://www.w3.org/2000/svg">Hello</text>'
         elem = etree.fromstring(xml)
         result = get_text_content(elem)
-        
+
         self.assertEqual(result, "Hello")
 
     def test_get_text_content_with_children(self):
@@ -400,7 +400,7 @@ class TestGetTextContent(unittest.TestCase):
         </text>'''
         elem = etree.fromstring(xml)
         result = get_text_content(elem)
-        
+
         self.assertIn("Hello", result)
         self.assertIn("World", result)
         self.assertIn("Test", result)
@@ -410,7 +410,7 @@ class TestGetTextContent(unittest.TestCase):
         xml = '<text xmlns="http://www.w3.org/2000/svg"></text>'
         elem = etree.fromstring(xml)
         result = get_text_content(elem)
-        
+
         self.assertEqual(result, "")
 
     def test_get_text_content_nested_structure(self):
@@ -420,7 +420,7 @@ class TestGetTextContent(unittest.TestCase):
         </text>'''
         elem = etree.fromstring(xml)
         result = get_text_content(elem)
-        
+
         self.assertIn("First", result)
         self.assertIn("Nested", result)
 
@@ -433,7 +433,7 @@ class TestCloneElement(unittest.TestCase):
         xml = '<text id="text1" xmlns="http://www.w3.org/2000/svg">Hello</text>'
         elem = etree.fromstring(xml)
         cloned = clone_element(elem)
-        
+
         self.assertEqual(cloned.get('id'), 'text1')
         self.assertEqual(cloned.text, 'Hello')
         self.assertIsNot(cloned, elem)
@@ -446,7 +446,7 @@ class TestCloneElement(unittest.TestCase):
         </text>'''
         elem = etree.fromstring(xml)
         cloned = clone_element(elem)
-        
+
         children = cloned.findall('{http://www.w3.org/2000/svg}tspan')
         self.assertEqual(len(children), 2)
         self.assertEqual(children[0].get('id'), 't1')
@@ -457,10 +457,10 @@ class TestCloneElement(unittest.TestCase):
         xml = '<text id="text1" xmlns="http://www.w3.org/2000/svg"><tspan>Test</tspan></text>'
         elem = etree.fromstring(xml)
         cloned = clone_element(elem)
-        
+
         # Modify original
         elem.set('id', 'modified')
-        
+
         # Clone should be unchanged
         self.assertEqual(cloned.get('id'), 'text1')
 
@@ -469,7 +469,7 @@ class TestCloneElement(unittest.TestCase):
         xml = '<text id="t1" class="label" x="10" y="20" xmlns="http://www.w3.org/2000/svg">Test</text>'
         elem = etree.fromstring(xml)
         cloned = clone_element(elem)
-        
+
         self.assertEqual(cloned.get('id'), 't1')
         self.assertEqual(cloned.get('class'), 'label')
         self.assertEqual(cloned.get('x'), '10')
@@ -485,7 +485,7 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_make_translation_ready_with_tref(self):
         """Test that SVG with tref raises exception."""
@@ -494,10 +494,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text><tref href="#someref"/></text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('tref', str(ctx.exception))
 
     def test_make_translation_ready_with_css_ids(self):
@@ -508,10 +508,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text id="myid">Test</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('css', str(ctx.exception).lower())
 
     def test_make_translation_ready_with_dollar_sign(self):
@@ -521,10 +521,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text>Price: $10</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('dollar', str(ctx.exception).lower())
 
     def test_make_translation_ready_nested_tspans(self):
@@ -534,10 +534,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text><tspan>Outer<tspan>Inner</tspan></tspan></text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('nested', str(ctx.exception).lower())
 
     def test_make_translation_ready_wraps_raw_text(self):
@@ -547,9 +547,9 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text>Raw text content</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         _tree, root = make_translation_ready(svg_path)
-        
+
         text_elem = root.find('.//{http://www.w3.org/2000/svg}text')
         tspans = text_elem.findall('{http://www.w3.org/2000/svg}tspan')
         self.assertGreater(len(tspans), 0)
@@ -561,9 +561,9 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <g><text id="t1">Content</text></g>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         _tree, root = make_translation_ready(svg_path)
-        
+
         switches = root.findall('.//{http://www.w3.org/2000/svg}switch')
         self.assertGreater(len(switches), 0)
 
@@ -574,9 +574,9 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text>No ID</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         _tree, root = make_translation_ready(svg_path)
-        
+
         text_elem = root.find('.//{http://www.w3.org/2000/svg}text')
         self.assertIsNotNone(text_elem.get('id'))
 
@@ -590,10 +590,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('lang', str(ctx.exception).lower())
 
     def test_make_translation_ready_splits_comma_langs(self):
@@ -606,12 +606,12 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         _tree, root = make_translation_ready(svg_path)
-        
+
         switch = root.find('.//{http://www.w3.org/2000/svg}switch')
         text_elems = switch.findall('{http://www.w3.org/2000/svg}text')
-        
+
         # Should have split into separate text elements
         self.assertGreater(len(text_elems), 2)
 
@@ -622,10 +622,10 @@ class TestMakeTranslationReadyEdgeCases(unittest.TestCase):
             <text id="invalid|id">Test</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         with self.assertRaises(SvgStructureException) as ctx:
             make_translation_ready(svg_path)
-        
+
         self.assertIn('id', str(ctx.exception).lower())
 
 
@@ -638,7 +638,7 @@ class TestExtractYearHandling(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_extract_detects_year_suffix(self):
         """Test extraction detects and handles year suffixes."""
@@ -650,9 +650,9 @@ class TestExtractYearHandling(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         # Should create title mapping for year-suffixed text
         if result and "title" in result:
             self.assertIsInstance(result["title"], dict)
@@ -668,9 +668,9 @@ class TestExtractYearHandling(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
         self.assertIn("new", result)
 
@@ -683,9 +683,9 @@ class TestExtractYearHandling(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
         # Should not create title mapping for non-4-digit numbers
 
@@ -699,7 +699,7 @@ class TestExtractEdgeCases(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_extract_empty_switch(self):
         """Test extraction with empty switch element."""
@@ -708,9 +708,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             <switch></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         # Should handle gracefully
         self.assertIsNotNone(result)
 
@@ -723,9 +723,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
 
     def test_extract_with_mixed_tspan_and_text(self):
@@ -740,9 +740,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
 
     def test_extract_case_insensitive_default(self):
@@ -755,9 +755,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path, case_insensitive=True)
-        
+
         if result and "new" in result:
             # Keys should be lowercase
             self.assertTrue(any(key.islower() for key in result["new"].keys()))
@@ -771,9 +771,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
 
     def test_extract_with_base_id_fallback(self):
@@ -786,9 +786,9 @@ class TestExtractEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         result = extract(svg_path)
-        
+
         self.assertIsNotNone(result)
 
 
@@ -803,14 +803,14 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_start_injects_empty_file_list(self):
         """Test start_injects with empty file list."""
         translations = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         result = start_injects([], translations, self.output_dir)
-        
+
         self.assertEqual(result['saved_done'], 0)
         self.assertEqual(result['no_save'], 0)
 
@@ -818,9 +818,9 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
         """Test start_injects with nonexistent files."""
         translations = {"new": {"hello": {"ar": "مرحبا"}}}
         files = [str(self.test_dir / "nonexistent.svg")]
-        
+
         result = start_injects(files, translations, self.output_dir)
-        
+
         self.assertEqual(result['saved_done'], 0)
         self.assertGreater(result['no_save'], 0)
 
@@ -831,11 +831,11 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
             <text><tspan>Outer<tspan>Nested</tspan></tspan></text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         translations = {"new": {"outer": {"ar": "مرحبا"}}}
-        
+
         result = start_injects([str(svg_path)], translations, self.output_dir)
-        
+
         self.assertGreaterEqual(result['nested_files'], 0)
 
     def test_start_injects_tracks_no_changes(self):
@@ -848,11 +848,11 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         translations = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         result = start_injects([str(svg_path)], translations, self.output_dir, overwrite=False)
-        
+
         # Should track files with no changes
         self.assertIn('no_changes', result)
 
@@ -866,11 +866,11 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
             </switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         translations = {"new": {"hello": {"ar": "New"}}}
-        
+
         result = start_injects([str(svg_path)], translations, self.output_dir, overwrite=True)
-        
+
         # Should process the file
         self.assertIn('files', result)
 
@@ -881,11 +881,11 @@ class TestStartInjectsEdgeCases(unittest.TestCase):
             <switch><text id="t1"><tspan>Hello</tspan></text></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         translations = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         result = start_injects([str(svg_path)], translations, self.output_dir)
-        
+
         self.assertIn('files', result)
         self.assertIsInstance(result['files'], dict)
 
@@ -899,30 +899,30 @@ class TestLoadAllMappingsEdgeCases(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_load_all_mappings_empty_list(self):
         """Test loading with empty file list."""
         result = load_all_mappings([])
-        
+
         self.assertEqual(result, {})
 
     def test_load_all_mappings_empty_json_file(self):
         """Test loading empty JSON file."""
         mapping_file = self.test_dir / "empty.json"
         mapping_file.write_text("{}", encoding='utf-8')
-        
+
         result = load_all_mappings([mapping_file])
-        
+
         self.assertEqual(result, {})
 
     def test_load_all_mappings_corrupted_json(self):
         """Test loading corrupted JSON file."""
         mapping_file = self.test_dir / "corrupted.json"
         mapping_file.write_text("{ corrupted", encoding='utf-8')
-        
+
         result = load_all_mappings([mapping_file])
-        
+
         self.assertEqual(result, {})
 
     def test_load_all_mappings_nested_structure(self):
@@ -938,9 +938,9 @@ class TestLoadAllMappingsEdgeCases(unittest.TestCase):
         }
         with open(mapping_file, 'w', encoding='utf-8') as f:
             json.dump(test_mapping, f, ensure_ascii=False)
-        
+
         result = load_all_mappings([mapping_file])
-        
+
         self.assertIn("new", result)
         self.assertIn("title", result)
 
@@ -948,15 +948,15 @@ class TestLoadAllMappingsEdgeCases(unittest.TestCase):
         """Test merging mappings with overlapping keys."""
         m1 = self.test_dir / "m1.json"
         m2 = self.test_dir / "m2.json"
-        
+
         with open(m1, 'w', encoding='utf-8') as f:
             json.dump({"key": {"lang1": "value1"}}, f)
-        
+
         with open(m2, 'w', encoding='utf-8') as f:
             json.dump({"key": {"lang2": "value2"}}, f)
-        
+
         result = load_all_mappings([m1, m2])
-        
+
         self.assertIn("lang1", result["key"])
         self.assertIn("lang2", result["key"])
 
@@ -965,9 +965,9 @@ class TestLoadAllMappingsEdgeCases(unittest.TestCase):
         mapping_file = self.test_dir / "test.json"
         with open(mapping_file, 'w', encoding='utf-8') as f:
             json.dump({"key": {"value": "test"}}, f)
-        
+
         result = load_all_mappings([str(mapping_file)])
-        
+
         self.assertIn("key", result)
 
 
@@ -980,7 +980,7 @@ class TestInjectEdgeCases(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_inject_with_invalid_svg_structure(self):
         """Test inject with invalid SVG structure."""
@@ -989,11 +989,11 @@ class TestInjectEdgeCases(unittest.TestCase):
             <text id="bad|id">Test</text>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         mappings = {"new": {"test": {"ar": "اختبار"}}}
-        
+
         result, stats = inject(svg_path, all_mappings=mappings, return_stats=True)
-        
+
         self.assertIsNone(result)
         self.assertIn('error', stats)
 
@@ -1004,11 +1004,11 @@ class TestInjectEdgeCases(unittest.TestCase):
             <switch><text id="t1"><tspan>Hello</tspan></text></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         mappings = {"new": {"Hello": {"ar": "مرحبا"}}}
-        
+
         result = inject(svg_path, all_mappings=mappings, case_insensitive=False)
-        
+
         self.assertIsNotNone(result)
 
     def test_inject_both_mapping_files_and_all_mappings(self):
@@ -1018,19 +1018,19 @@ class TestInjectEdgeCases(unittest.TestCase):
             <switch><text id="t1"><tspan>Hello</tspan></text></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         mapping_file = self.test_dir / "mapping.json"
         with open(mapping_file, 'w', encoding='utf-8') as f:
             json.dump({"new": {"hello": {"fr": "Bonjour"}}}, f)
-        
+
         all_mappings = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         result = inject(
             svg_path,
             mapping_files=[mapping_file],
             all_mappings=all_mappings
         )
-        
+
         # all_mappings should be used
         self.assertIsNotNone(result)
 
@@ -1041,17 +1041,17 @@ class TestInjectEdgeCases(unittest.TestCase):
             <switch><text id="t1"><tspan>Hello</tspan></text></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         output_file = self.test_dir / "output.svg"
         mappings = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         inject(
             svg_path,
             all_mappings=mappings,
             output_file=output_file,
             save_result=True
         )
-        
+
         self.assertTrue(output_file.exists())
 
     def test_inject_without_save_result_no_file_created(self):
@@ -1061,17 +1061,17 @@ class TestInjectEdgeCases(unittest.TestCase):
             <switch><text id="t1"><tspan>Hello</tspan></text></switch>
         </svg>'''
         svg_path.write_text(svg_content, encoding='utf-8')
-        
+
         output_file = self.test_dir / "output.svg"
         mappings = {"new": {"hello": {"ar": "مرحبا"}}}
-        
+
         inject(
             svg_path,
             all_mappings=mappings,
             output_file=output_file,
             save_result=False
         )
-        
+
         self.assertFalse(output_file.exists())
 
 

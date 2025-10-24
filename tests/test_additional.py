@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+import shutil
 from pathlib import Path
 from lxml import etree
 
@@ -16,7 +17,6 @@ from CopySvgTranslate.text_utils import extract_text_from_node
 from CopySvgTranslate.injection.injector import load_all_mappings
 from CopySvgTranslate.injection.preparation import normalize_lang, get_text_content, clone_element, SvgStructureException
 from CopySvgTranslate.workflows import svg_extract_and_injects
-from tests._cleanup import cleanup_directory
 
 
 class TestTextUtilsComprehensive(unittest.TestCase):
@@ -102,7 +102,7 @@ class TestInjectorFunctions(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_load_all_mappings_single_json(self):
         """Test loading single mapping file."""
@@ -149,7 +149,7 @@ class TestWorkflowFunctions(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_svg_extract_and_injects_basic_workflow(self):
         """Test basic svg_extract_and_injects workflow."""
@@ -169,7 +169,7 @@ class TestExtractorEdgeCases(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_extract_multiple_languages(self):
         """Test extracting with multiple language translations."""
@@ -198,7 +198,7 @@ class TestInjectionEdgeCases(unittest.TestCase):
         self.test_dir = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        cleanup_directory(self.test_dir)
+        shutil.rmtree(self.test_dir)
 
     def test_inject_with_output_directory(self):
         """Test inject saves to specified output directory."""

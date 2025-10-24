@@ -15,7 +15,7 @@ This document summarizes the comprehensive unit tests generated for the CopySvgT
 
 - **Framework**: Python unittest
 - **Additional Tools**: pytest (for execution), lxml (for XML parsing)
-- **Fixtures**: Uses `tempfile` for temporary directories and cleanup utilities from `tests._cleanup`
+- **Fixtures**: Uses `tempfile` for temporary directories
 
 ## Test Coverage by Module
 
@@ -258,7 +258,7 @@ All tests are organized in the single file `tests/test_extended_coverage.py` for
 ```python
 def setUp(self):
     self.test_dir = Path(tempfile.mkdtemp())
-    
+
 def tearDown(self):
     cleanup_directory(self.test_dir)
 ```

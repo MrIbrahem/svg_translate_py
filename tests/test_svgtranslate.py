@@ -15,7 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from CopySvgTranslate import extract, inject, normalize_text, generate_unique_id
-
+from tests._cleanup import cleanup_directory
 
 class TestSVGTranslate(unittest.TestCase):
     """Test cases for the SVG translation tool."""
@@ -113,9 +113,7 @@ class TestSVGTranslate(unittest.TestCase):
     def tearDown(self):
         """Clean up test fixtures."""
         # Clean up temporary files
-        for file in self.test_dir.glob('*'):
-            file.unlink()
-        self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def assertTreeHasTranslations(self, tree, expected_texts=None):
         """Verify that the injected tree contains the expected Arabic texts."""

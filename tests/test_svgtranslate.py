@@ -21,7 +21,16 @@ class TestSVGTranslate(unittest.TestCase):
     """Test cases for the SVG translation tool."""
 
     def setUp(self):
-        """Set up test fixtures."""
+        """
+        Prepare temporary directory and SVG test fixtures used by the test cases.
+        
+        Sets up the following instance attributes for use by tests:
+            test_dir: Path to a temporary directory for fixture files.
+            arabic_svg_content: SVG string containing English and Arabic switches (two entries).
+            no_translations_svg_content: SVG string containing only English switches (two entries).
+            expected_arabic_texts: List of the Arabic tspan texts expected to be found in the Arabic SVG.
+            expected_translations: Mapping structure representing expected translation mappings for the two English source strings to Arabic.
+        """
         self.test_dir = Path(tempfile.mkdtemp())
         self.arabic_svg_content = '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"

@@ -21,7 +21,20 @@ def svg_extract_and_inject(
     overwrite: bool | None = None,
     save_result: bool = False,
 ):
-    """Extract translations from one SVG and inject them into another."""
+    """
+    Extract translations from one SVG and inject them into another.
+    
+    Parameters:
+        extract_file (Path | str): Path to the SVG file to extract translations from.
+        inject_file (Path | str): Path to the SVG file to inject translations into.
+        output_file (Path | None): Optional path for the resulting injected SVG. If omitted, a file with the same name as `inject_file` is created in a `translated` directory under the current working directory.
+        data_output_file (Path | None): Optional path for the JSON file that will store extracted translations. If omitted, a file named after `extract_file` is created in a `data` directory under the current working directory.
+        overwrite (bool | None): If `True`, an existing `output_file` will be overwritten. Treated as `False` when not provided.
+        save_result (bool): If `True`, the injection result will be saved to `output_file`.
+    
+    Returns:
+        ElementTree | None: The parsed tree of the injected SVG when successful, `None` if extraction or injection failed.
+    """
     extract_path = Path(str(extract_file))
     inject_path = Path(str(inject_file))
 

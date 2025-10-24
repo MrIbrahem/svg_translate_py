@@ -25,6 +25,7 @@ from CopySvgTranslate.injection.preparation import (
     SvgStructureException,
 )
 from CopySvgTranslate.workflows import svg_extract_and_inject, svg_extract_and_injects
+from tests._cleanup import cleanup_directory
 
 
 class TestTextUtils(unittest.TestCase):
@@ -180,9 +181,7 @@ class TestInjector(unittest.TestCase):
 
     def tearDown(self):
         """Clean up test fixtures."""
-        for file in self.test_dir.glob('*'):
-            file.unlink()
-        self.test_dir.rmdir()
+        cleanup_directory(self.test_dir)
 
     def test_load_all_mappings_single_file(self):
         """Test loading a single mapping file."""

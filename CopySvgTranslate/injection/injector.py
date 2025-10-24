@@ -19,20 +19,18 @@ def get_target_path(
     output_dir: Path | str | None,
     svg_path: Path,
 ) -> Path:
-    """Determines the target path for the output SVG file.
-
-    If an output file path is provided, it's used directly. Otherwise,
-    the path is constructed from an output directory (or the source file's
-    directory if not provided) and the source file's name. The necessary
-    parent directories are created in the latter case.
-
-    Args:
-        output_file: The explicit path for the output file.
-        output_dir: The directory to save the output file in.
-        svg_path: The path to the original SVG file.
-
+    """
+    Determine the filesystem path where the modified SVG should be written.
+    
+    If `output_file` is provided, it is used as the target path. Otherwise the path is constructed by combining `output_dir` (if given) or the source file's directory with the source file's name. In all cases the parent directories for the resolved path are created if they do not exist.
+    
+    Parameters:
+        output_file (Path | str | None): Explicit output file path to use.
+        output_dir (Path | str | None): Directory to place the output file when `output_file` is not provided.
+        svg_path (Path): Path to the original SVG file; its name is used when constructing a target path.
+    
     Returns:
-        The resolved path for the output file.
+        Path: The resolved filesystem path for the output SVG file.
     """
     if output_file:
         target_path = Path(output_file)

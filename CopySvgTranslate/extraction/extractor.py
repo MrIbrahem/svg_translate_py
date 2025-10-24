@@ -11,7 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 def extract(svg_file_path, case_insensitive: bool = True):
-    """Extract translations from an SVG file and return them as a dictionary."""
+    """
+    Extract translation strings from an SVG file into a structured dictionary.
+    
+    Parses the SVG, collects default (source) text and corresponding translations found in sibling text elements with a `systemLanguage` attribute, and returns a mapping suitable for localization workflows. Title-like entries that end with a four-digit year are separated into a `title` section with the year removed.
+    
+    Parameters:
+    	svg_file_path (str | Path): Path to the SVG file to process.
+    	case_insensitive (bool): If true, treat default text keys case-insensitively by lowercasing them.
+    
+    Returns:
+    	dict | None: A dictionary containing extracted translations (may include a "new" mapping of source text to per-language translations and a "title" mapping), or `None` if the file does not exist or could not be parsed.
+    """
     svg_file_path = Path(svg_file_path)
 
     if not svg_file_path.exists():

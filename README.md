@@ -20,7 +20,7 @@ from CopySvgTranslate import svg_extract_and_inject
 tree = svg_extract_and_inject(
     extract_file=Path("examples/source_multilingual.svg"),
     inject_file=Path("examples/target_missing_translations.svg"),
-    data_output_file = Path("examples/data.json")
+    data_output_file = Path("examples/data.json"),
     save_result=True,
 )
 
@@ -138,7 +138,7 @@ above.
 }
 ```
 
-### Injection Example 
+### Injection Example
 - TODO
 
 ## Testing

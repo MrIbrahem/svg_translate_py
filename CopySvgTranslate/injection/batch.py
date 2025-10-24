@@ -39,7 +39,7 @@ def start_injects(
         stats["file_path"] = ""
 
         output_file = output_dir_translated / file.name
-        if stats.get("new_languages") == 0:
+        if stats.get("new_languages", 0) == 0 and stats.get("updated_translations", 0) == 0:
             no_changes += 1
             files_stats[file.name] = stats
             continue

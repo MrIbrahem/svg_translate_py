@@ -31,7 +31,8 @@ def extract(svg_file_path, case_insensitive: bool = True):
     switches = root.xpath('//svg:switch', namespaces={'svg': 'http://www.w3.org/2000/svg'})
     logger.debug(f"Found {len(switches)} switch elements")
 
-    translations: dict[str, dict] = {"new": {}}
+    default_tspans_by_id = {}
+    translations = {"new": {}}
     processed_switches = 0
 
     for switch in switches:
@@ -44,11 +45,13 @@ def extract(svg_file_path, case_insensitive: bool = True):
             if text_elem.get('systemLanguage'):
                 continue
 
-            default_texts = [
-                normalize_text(text, case_insensitive)
-                for text in extract_text_from_node(text_elem)
-            ]
-            break
+            tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
+            if tspans:
+                tspans_by_id = {tspan.get('id'): tspan.text.strip() for tspan in tspans if tspan.text}
+                default_tspans_by_id.update(tspans_by_id)
+                text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
+            else:
+                text_contents = [text_elem.text.strip()] if text_elem.text else [""]
 
         if not default_texts:
             continue
@@ -59,13 +62,39 @@ def extract(svg_file_path, case_insensitive: bool = True):
             if not system_lang:
                 continue
 
-            switch_translations[system_lang] = [
-                normalize_text(text)
-                for text in extract_text_from_node(text_elem)
-            ]
+            tspans = text_elem.xpath('./svg:tspan', namespaces={'svg': 'http://www.w3.org/2000/svg'})
+            if tspans:
+                tspans_to_id = {tspan.text.strip(): tspan.get('id') for tspan in tspans if tspan.text and tspan.text.strip() and tspan.get('id')}
+                # Return a list of text from each tspan element
+                text_contents = [tspan.text.strip() if tspan.text else "" for tspan in tspans]
+            else:
+                tspans_to_id = {}
+                text_contents = [text_elem.text.strip()] if text_elem.text else [""]
 
-        if not switch_translations:
-            continue
+            switch_translations[system_lang] = [normalize_text(text) for text in text_contents]
+
+            for text in text_contents:
+                normalized_translation = normalize_text(text)
+                base_id = tspans_to_id.get(text.strip(), "")
+                if not base_id:
+                    continue
+                    
+                base_id = base_id.split("-")[0].strip()
+                english_text = default_tspans_by_id.get(base_id) or default_tspans_by_id.get(
+                    base_id.lower()
+                )
+                logger.debug(f"{base_id=}, {english_text=}")
+                if not english_text:
+                    continue
+
+                store_key = english_text if english_text in translations["new"] else english_text.lower()
+                if store_key in translations["new"]:
+                    translations["new"][store_key][system_lang] = normalized_translation
+
+        # If we found both default text and translations, add to our data
+        if default_texts and switch_translations:
+            processed_switches += 1
+            logger.debug(f"Processed switch with default texts: {default_texts}")
 
         processed_switches += 1
         for lang, translated_texts in switch_translations.items():
@@ -78,28 +107,12 @@ def extract(svg_file_path, case_insensitive: bool = True):
                     )
                     continue
 
-                key = default_text.lower() if case_insensitive else default_text
-                translations["new"].setdefault(key, {})[lang] = translated_texts[index]
-
-    title_translations: dict[str, dict[str, str]] = {}
+    translations["title"] = {}
     for key, mapping in list(translations["new"].items()):
-        if not key or len(key) < 4 or not key[-4:].isdigit():
-            continue
-
-        year = key[-4:]
-        if key == year:
-            continue
-
-        if all(value.endswith(year) for value in mapping.values() if value):
-            title_key = key[:-4]
-            title_translations[title_key] = {
-                lang: value[:-4] for lang, value in mapping.items()
-            }
-
-    if title_translations:
-        translations["title"] = title_translations
-    else:
-        translations["title"] = {}
+        if key and key[-4:].isdigit():
+            year = key[-4:]
+            if key != year and all(value[-4:].isdigit() and value[-4:] == year for value in mapping.values()):
+                translations["title"][key[:-4]] = {lang: text[:-4] for lang, text in mapping.items()}
 
     if not translations["new"]:
         translations.pop("new")

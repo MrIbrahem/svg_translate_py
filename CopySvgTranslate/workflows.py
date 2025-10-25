@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Mapping
+from warnings import deprecated
 
 from .extraction import extract
 from .injection import inject
@@ -80,6 +81,7 @@ def svg_extract_and_inject(
     return tree
 
 
+@deprecated("use CopySvgTranslate.inject(inject_file, mapping_files=[], all_mappings={}, ...) insted")
 def svg_extract_and_injects(
     translations: Mapping,
     inject_file: Path | str,

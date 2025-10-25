@@ -330,7 +330,12 @@ def inject(
     if save_result:
         try:
             target_path = get_target_path(output_file, output_dir, inject_path)
-            tree.write(str(target_path), encoding='utf-8', xml_declaration=True, pretty_print=True)
+            tree.write(
+                str(target_path),
+                encoding='utf-8',
+                xml_declaration=True,
+                pretty_print=kwargs.get("pretty_print", True)
+            )
             logger.debug(f"Saved modified SVG to {target_path}")
         except Exception as e:
             logger.error(f"Failed writing {inject_path.name}: {e}")

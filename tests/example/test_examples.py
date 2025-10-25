@@ -1,7 +1,7 @@
 import pytest
 import json
 from pathlib import Path
-from CopySvgTranslate import extract, svg_extract_and_inject, inject
+from CopySvgTranslate import extract, svg_extract_and_inject, inject, make_translation_ready
 
 FIXTURES_DIR = Path(__file__).parent
 
@@ -35,6 +35,7 @@ def setup_tmpdir(tmp_path):
 
 
 class TestIntegrationWorkflows:
+
     def test_svg_extract_and_inject_end_to_end(self, setup_tmpdir):
         r = svg_extract_and_inject(
             setup_tmpdir["source_svg"],

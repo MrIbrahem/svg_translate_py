@@ -1,4 +1,8 @@
 """
+بقية الاختبارات:
+
+I:/svgtranslate_php/svgtranslate_php/tests/Model/Svg/SvgFileTest.php
+
 """
 
 import sys

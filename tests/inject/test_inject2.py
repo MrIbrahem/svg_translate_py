@@ -128,7 +128,7 @@ class Testinject:
             # ---
             text = f'<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg">{tab["svg"]}</svg>'
             # ---
-            file = file = self.getSvgFileFromString(temp_dir, text)
+            file = self.getSvgFileFromString(temp_dir, text)
             # ---
             try:
                 make_translation_ready(file, True)
